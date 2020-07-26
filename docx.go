@@ -15,12 +15,12 @@ type Body struct {
 
 //Table : Simply holds the tags that tbl can hold
 type Table struct {
-	TableRow TableRow `xml:"tr"`
+	TableRow []TableRow `xml:"tr"`
 }
 
 //TableRow : Holds all the things a tr element can
 type TableRow struct {
-	TableColumn TableColumn `xml:"tc"`
+	TableColumn []TableColumn `xml:"tc"`
 }
 
 //TableColumn : Holds all the things a tc element can
