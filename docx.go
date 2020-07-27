@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"encoding/xml"
 	"io"
-	"strings"
+	"io/ioutil"
 )
 
 //Body : Elements found within the body section of a word docx
@@ -53,18 +53,12 @@ func UnpackDocx(filePath string) (*zip.ReadCloser, []*zip.File) {
 }
 
 //WordDocToString : This converts the file interface object into a raw string
-func WordDocToString(reader io.Reader) (content string) {
-	_content := make([]string, 100)
-	data := make([]byte, 100)
-
-	for {
-		n, err := reader.Read(data)
-		_content = append(_content, string(data))
-		if err == io.EOF && n == 0 {
-			break
-		}
+func WordDocToString(reader io.Reader) (sContent string) {
+	content, err := ioutil.ReadAll(reader)
+	if err != nil {
+		panic(err)
 	}
-	content = strings.Join(_content, "")
+	sContent = string(content)
 	return
 }
 
