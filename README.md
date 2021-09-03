@@ -28,3 +28,6 @@ As a function
 		}
 		return
 	}
+
+
+[![Go Reference](https://pkg.go.dev/badge/github.com/khnom5000/go-read-docx.svg)](https://pkg.go.dev/github.com/khnom5000/go-read-docx)
