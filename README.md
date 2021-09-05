@@ -60,7 +60,7 @@ Output:
 [[1 2 3 4] [8 8 8 66] [123 1 1 1] [   ]]
 ```
 
-### More than one table in the same docx:
+### Example - Read more than one table in the same docx:
 
 Input:
 ```
@@ -101,7 +101,7 @@ Output:
 [[7 8 9 0] [0 33 66 99] [123 100 100 100] [   ]]
 ```
 
-### Get the Headers:
+### Example - Get the Headers:
 
 ```go
 ...
@@ -114,5 +114,26 @@ fmt.Println(h.Text)
 ```
 The above also works for footers just swap the function call GetHeader() -> GetFooter()
 
+## Examples
+### Run the example code with the TestDoc
+from the go-read-docx folder, run the following command `go run ./examples/docWrapper.go`
+
+Output:
+```
+Show all paragraphs
+Para: 0 Start of page one.
+Para: 1 This is a table.
+Para: 2 This is the second table.
+Para: 3 This is the end of the doc!
+Show first table
+[[1 2 3 4] [8 8 8 66] [123 1 1 1] [   ]]
+Show all tables
+[[1 2 3 4] [8 8 8 66] [123 1 1 1] [   ]]
+[[7 8 9 0] [0 33 66 99] [123 100 100 100] [   ]]
+Show Header
+This is a header.
+Show Footer
+This is a footer.
+```
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/khnom5000/go-read-docx.svg)](https://pkg.go.dev/github.com/khnom5000/go-read-docx)
