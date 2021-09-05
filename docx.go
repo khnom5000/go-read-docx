@@ -3,24 +3,24 @@ package docx
 import (
 	"archive/zip"
 	"encoding/xml"
+	"errors"
 	"io"
-	"io/ioutil"
 )
 
 //Body : Elements found within the body section of a word docx
 type Body struct {
-	Paragraph []string `xml:"p>r>t"`
-	Table     Table    `xml:"tbl"`
+	Paragraphs []string `xml:"p>r>t"`
+	Tables     []Table  `xml:"tbl"`
 }
 
 //Table : Simply holds the tags that tbl can hold
 type Table struct {
-	TableRow []TableRow `xml:"tr"`
+	TableRows []TableRow `xml:"tr"`
 }
 
 //TableRow : Holds all the things a tr element can
 type TableRow struct {
-	TableColumn []TableColumn `xml:"tc"`
+	TableColumns []TableColumn `xml:"tc"`
 }
 
 //TableColumn : Holds all the things a tc element can
@@ -34,49 +34,91 @@ type Document struct {
 	Body    Body     `xml:"body"`
 }
 
-//Extract : parse the xml into the structures defined as per "Document"
-func Extract(xmlContent string) (d Document) {
-	err := xml.Unmarshal([]byte(xmlContent), &d)
-	if err != nil {
-		panic(err)
-	}
-	return
-}
-
 //UnpackDocx : Unzip the doc file
-func UnpackDocx(filePath string) (*zip.ReadCloser, []*zip.File) {
-	reader, err := zip.OpenReader(filePath)
+func UnzipDocx(f string) (*zip.ReadCloser, error) {
+	rc, err := zip.OpenReader(f)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return reader, reader.File
+	return rc, nil
 }
 
-//WordDocToString : This converts the file interface object into a raw string
-func WordDocToString(reader io.Reader) (sContent string) {
-	content, err := ioutil.ReadAll(reader)
-	if err != nil {
-		panic(err)
-	}
-	sContent = string(content)
-	return
-}
-
-//RetrieveWordDoc : Simply loops over the files looking for the file with name "word/document"
-func RetrieveWordDoc(files []*zip.File) (file *zip.File) {
-	for _, f := range files {
-		if f.Name == "word/document.xml" {
-			file = f
+//GetWordDoc : loops over the files looking for the file with name "word/document.xml"
+//Can only find 1 "word/document.xml" if 0 or more than 1 are found an err will be thrown
+func GetWordDoc(files *zip.ReadCloser) (*zip.File, error) {
+	c := 0
+	f := new(zip.File)
+	for _, file := range files.File {
+		if file.Name == "word/document.xml" {
+			f = file
+			c++
 		}
 	}
-	return
+
+	if c == 0 {
+		return nil, errors.New("no \"word/document.xml\" found in file")
+	} else if c > 1 {
+		return nil, errors.New("more than one \"word/document.xml\" found in file")
+	}
+
+	return f, nil
 }
 
 //OpenWordDoc : Opens the zipfile into a reader for WordDocToString
-func OpenWordDoc(doc zip.File) (rc io.ReadCloser) {
+func OpenWordDoc(doc zip.File) (io.ReadCloser, error) {
 	rc, err := doc.Open()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return
+	return rc, nil
+}
+
+//WordDocToString : This converts the file interface object into a raw string
+func WordDocToString(reader io.Reader) (string, error) {
+	content, err := io.ReadAll(reader)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
+}
+
+//Extract : parse the xml into the structures defined as per "Document"
+func Extract(xmlContent string) (Document, error) {
+	d := Document{}
+	err := xml.Unmarshal([]byte(xmlContent), &d)
+	if err != nil {
+		return Document{}, err
+	}
+	return d, nil
+}
+
+//GetDocument : Wrapper function that takes a file, and retuns both the Document{} and ReadCloser
+func GetDocument(f string) (Document, error) {
+	reader, err := UnzipDocx(f)
+	if err != nil {
+		return Document{}, err
+	}
+	defer reader.Close()
+
+	docFile, err := GetWordDoc(reader)
+	if err != nil {
+		return Document{}, err
+	}
+
+	doc, err := OpenWordDoc(*docFile)
+	if err != nil {
+		return Document{}, err
+	}
+	defer doc.Close()
+
+	content, err := WordDocToString(doc)
+	if err != nil {
+		return Document{}, err
+	}
+
+	d, err := Extract(content)
+	if err != nil {
+		return Document{}, err
+	}
+	return d, nil
 }
