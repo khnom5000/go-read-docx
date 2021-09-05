@@ -1,5 +1,5 @@
 # go-read-docx
-simple way to read parts of a docx in go
+## simple way to read parts of a docx in go
 
 ```go
 package main
@@ -16,7 +16,7 @@ func main() {
 }
 ```
 
-Example - Read text in a docx:
+### Example - Read text in a docx:
 
 Code:
 ```go
@@ -28,7 +28,7 @@ for i, p := range ps {
 ...
 ```
 
-Example - Read a table thats inside a docx:
+### Example - Read a table thats inside a docx:
 
 Input:
 ```
@@ -47,7 +47,7 @@ var table [][]string
 for _, r := range t {
 	var row []string
 	for _, c := range r.TableColumns {
-		row = append(row, strings.Join(c.Cell, ""))
+		row = append(row, c.Cell)
 	}
 	table = append(table, row)
 }
@@ -60,7 +60,7 @@ Output:
 [[1 2 3 4] [8 8 8 66] [123 1 1 1] [   ]]
 ```
 
-More than one table in the same docx:
+### More than one table in the same docx:
 
 Input:
 ```
@@ -87,7 +87,7 @@ for _, t := range ts {
 	for _, tr := range t.TableRows {
 		var row []string
 		for _, tc := range tr.TableColumns {
-			row = append(row, strings.Join(tc.Cell, ""))
+			row = append(row, tc.Cell)
 		}
 		table = append(table, row)
 	}
@@ -100,5 +100,19 @@ Output:
 [[1 2 3 4] [8 8 8 66] [123 1 1 1] [   ]]
 [[7 8 9 0] [0 33 66 99] [123 100 100 100] [   ]]
 ```
+
+### Get the Headers:
+
+```go
+...
+h, err := docx.GetHeader("./TestDocument.docx")
+if err != nil {
+	panic(err)
+}
+fmt.Println(h.Text)
+...
+```
+The above also works for footers just swap the function call GetHeader() -> GetFooter()
+
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/khnom5000/go-read-docx.svg)](https://pkg.go.dev/github.com/khnom5000/go-read-docx)

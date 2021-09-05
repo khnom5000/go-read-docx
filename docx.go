@@ -3,7 +3,7 @@ package docx
 import (
 	"archive/zip"
 	"encoding/xml"
-	"errors"
+	"fmt"
 	"io"
 )
 
@@ -13,7 +13,7 @@ type Body struct {
 	Tables     []Table  `xml:"tbl"`
 }
 
-//Table : Simply holds the tags that tbl can hold
+//Table : Holds all the things a tbl element can
 type Table struct {
 	TableRows []TableRow `xml:"tr"`
 }
@@ -25,17 +25,33 @@ type TableRow struct {
 
 //TableColumn : Holds all the things a tc element can
 type TableColumn struct {
-	Cell []string `xml:"p>r>t"`
+	Cell string `xml:"p>r>t"`
 }
 
-//Document : Holds all the things a docx Document can
+//Document : Holds all the things a docx document(.xml) can
 type Document struct {
 	XMLName xml.Name `xml:"document"`
 	Body    Body     `xml:"body"`
 }
 
-//UnpackDocx : Unzip the doc file
-func UnzipDocx(f string) (*zip.ReadCloser, error) {
+//Header : Holds all the things a docx header1(.xml) can
+type Header struct {
+	XMLName xml.Name `xml:"hdr"`
+	Text    string   `xml:"p>r>t"`
+}
+
+//Footer : Holds all the things a docx footer1(.xml) can
+type Footer struct {
+	XMLName xml.Name `xml:"ftr"`
+	Text    string   `xml:"p>r>t"`
+}
+
+var docxPathOfDocumentXML = "word/document.xml"
+var docxPathOfHeaderXML = "word/header1.xml"
+var docxPathOfFooterXML = "word/footer1.xml"
+
+//unzipDocx : Unzip the doc file
+func unzipDocx(f string) (*zip.ReadCloser, error) {
 	rc, err := zip.OpenReader(f)
 	if err != nil {
 		return nil, err
@@ -43,38 +59,38 @@ func UnzipDocx(f string) (*zip.ReadCloser, error) {
 	return rc, nil
 }
 
-//GetWordDoc : loops over the files looking for the file with name "word/document.xml"
-//Can only find 1 "word/document.xml" if 0 or more than 1 are found an err will be thrown
-func GetWordDoc(files *zip.ReadCloser) (*zip.File, error) {
+//getXMLFile : loops over the files looking for the file matching the provided xmlDoc string
+//Can only find 1 occurance of the xmlDoc file if 0 or more than 1 are found an err will be thrown
+func getXMLFile(files *zip.ReadCloser, xmlDoc string) (*zip.File, error) {
 	c := 0
 	f := new(zip.File)
 	for _, file := range files.File {
-		if file.Name == "word/document.xml" {
+		if file.Name == xmlDoc {
 			f = file
 			c++
 		}
 	}
 
 	if c == 0 {
-		return nil, errors.New("no \"word/document.xml\" found in file")
+		return nil, fmt.Errorf("no %s found in docx file", xmlDoc)
 	} else if c > 1 {
-		return nil, errors.New("more than one \"word/document.xml\" found in file")
+		return nil, fmt.Errorf("more than one %s found in docx file", xmlDoc)
 	}
 
 	return f, nil
 }
 
-//OpenWordDoc : Opens the zipfile into a reader for WordDocToString
-func OpenWordDoc(doc zip.File) (io.ReadCloser, error) {
-	rc, err := doc.Open()
+//openFile : Opens the zipfile into a reader
+func openFile(file zip.File) (io.ReadCloser, error) {
+	rc, err := file.Open()
 	if err != nil {
 		return nil, err
 	}
 	return rc, nil
 }
 
-//WordDocToString : This converts the file interface object into a raw string
-func WordDocToString(reader io.Reader) (string, error) {
+//fileToString : This converts the file into a string
+func fileToString(reader io.Reader) (string, error) {
 	content, err := io.ReadAll(reader)
 	if err != nil {
 		return "", err
@@ -82,43 +98,125 @@ func WordDocToString(reader io.Reader) (string, error) {
 	return string(content), nil
 }
 
-//Extract : parse the xml into the structures defined as per "Document"
-func Extract(xmlContent string) (Document, error) {
-	d := Document{}
-	err := xml.Unmarshal([]byte(xmlContent), &d)
+//extractDocument : parse the string of xml into the structure defined as "Document"
+func extractDocument(xmlContent string) (Document, error) {
+	s := Document{}
+	err := xml.Unmarshal([]byte(xmlContent), &s)
+	if err != nil {
+		return Document{}, err
+	}
+	return s, nil
+}
+
+//extractHeader : parse the string of xml into the structure defined as "Header"
+func extractHeader(xmlContent string) (Header, error) {
+	s := Header{}
+	err := xml.Unmarshal([]byte(xmlContent), &s)
+	if err != nil {
+		return Header{}, err
+	}
+	return s, nil
+}
+
+//extractFooter : parse the string of xml into the structure defined as "Footer"
+func extractFooter(xmlContent string) (Footer, error) {
+	s := Footer{}
+	err := xml.Unmarshal([]byte(xmlContent), &s)
+	if err != nil {
+		return Footer{}, err
+	}
+	return s, nil
+}
+
+//GetDocument : takes a file, and retuns the Document{} struct
+func GetDocument(f string) (Document, error) {
+	reader, err := unzipDocx(f)
+	if err != nil {
+		return Document{}, err
+	}
+	defer reader.Close()
+
+	file, err := getXMLFile(reader, docxPathOfDocumentXML)
+	if err != nil {
+		return Document{}, err
+	}
+
+	fileContent, err := openFile(*file)
+	if err != nil {
+		return Document{}, err
+	}
+	defer fileContent.Close()
+
+	content, err := fileToString(fileContent)
+	if err != nil {
+		return Document{}, err
+	}
+
+	d, err := extractDocument(content)
 	if err != nil {
 		return Document{}, err
 	}
 	return d, nil
 }
 
-//GetDocument : Wrapper function that takes a file, and retuns both the Document{} and ReadCloser
-func GetDocument(f string) (Document, error) {
-	reader, err := UnzipDocx(f)
+//GetHeader : takes a file, and retuns the Header{} struct
+func GetHeader(f string) (Header, error) {
+	reader, err := unzipDocx(f)
 	if err != nil {
-		return Document{}, err
+		return Header{}, err
 	}
 	defer reader.Close()
 
-	docFile, err := GetWordDoc(reader)
+	file, err := getXMLFile(reader, docxPathOfHeaderXML)
 	if err != nil {
-		return Document{}, err
+		return Header{}, err
 	}
 
-	doc, err := OpenWordDoc(*docFile)
+	fileContent, err := openFile(*file)
 	if err != nil {
-		return Document{}, err
+		return Header{}, err
 	}
-	defer doc.Close()
+	defer fileContent.Close()
 
-	content, err := WordDocToString(doc)
+	content, err := fileToString(fileContent)
 	if err != nil {
-		return Document{}, err
+		return Header{}, err
 	}
 
-	d, err := Extract(content)
+	hdr, err := extractHeader(content)
 	if err != nil {
-		return Document{}, err
+		return Header{}, err
 	}
-	return d, nil
+	return hdr, nil
+}
+
+//GetFooter : takes a file, and retuns the Footer{} struct
+func GetFooter(f string) (Footer, error) {
+	reader, err := unzipDocx(f)
+	if err != nil {
+		return Footer{}, err
+	}
+	defer reader.Close()
+
+	file, err := getXMLFile(reader, docxPathOfFooterXML)
+	if err != nil {
+		return Footer{}, err
+	}
+
+	fileContent, err := openFile(*file)
+	if err != nil {
+		return Footer{}, err
+	}
+	defer fileContent.Close()
+
+	content, err := fileToString(fileContent)
+	if err != nil {
+		return Footer{}, err
+	}
+
+	ftr, err := extractFooter(content)
+	if err != nil {
+		return Footer{}, err
+	}
+	return ftr, nil
 }
