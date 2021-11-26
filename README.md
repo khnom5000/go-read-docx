@@ -1,5 +1,5 @@
 # go-read-docx
-## simple way to read parts of a docx in go
+## simple way to read a docx in golang
 
 ```go
 package main
