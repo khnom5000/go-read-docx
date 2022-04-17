@@ -46,9 +46,9 @@ type Footer struct {
 	Text    string   `xml:"p>r>t"`
 }
 
-var docxPathOfDocumentXML = "word/document.xml"
-var docxPathOfHeaderXML = "word/header1.xml"
-var docxPathOfFooterXML = "word/footer1.xml"
+const docxPathOfDocumentXML = "word/document.xml"
+const docxPathOfHeaderXML = "word/header1.xml"
+const docxPathOfFooterXML = "word/footer1.xml"
 
 //unzipDocx : Unzip the doc file
 func unzipDocx(f string) (*zip.ReadCloser, error) {
@@ -60,24 +60,14 @@ func unzipDocx(f string) (*zip.ReadCloser, error) {
 }
 
 //getXMLFile : loops over the files looking for the file matching the provided xmlDoc string
-//Can only find 1 occurance of the xmlDoc file if 0 or more than 1 are found an err will be thrown
 func getXMLFile(files *zip.ReadCloser, xmlDoc string) (*zip.File, error) {
-	c := 0
-	f := new(zip.File)
 	for _, file := range files.File {
 		if file.Name == xmlDoc {
-			f = file
-			c++
+			return file, nil
 		}
 	}
 
-	if c == 0 {
-		return nil, fmt.Errorf("no %s found in docx file", xmlDoc)
-	} else if c > 1 {
-		return nil, fmt.Errorf("more than one %s found in docx file", xmlDoc)
-	}
-
-	return f, nil
+	return nil, fmt.Errorf("no %s found in docx file", xmlDoc)
 }
 
 //openFile : Opens the zipfile into a reader

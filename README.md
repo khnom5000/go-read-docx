@@ -1,5 +1,5 @@
 # go-read-docx
-## simple way to read a docx in golang
+## simple way to read a docx in golang, including support for tables
 
 ```go
 package main
@@ -112,11 +112,7 @@ if err != nil {
 fmt.Println(h.Text)
 ...
 ```
-The above also works for footers just swap the function call GetHeader() -> GetFooter()
-
-## Examples
-### Run the example code with the TestDoc
-from the go-read-docx folder, run the following command `go run ./examples/docWrapper.go`
+The above also works for footers just swap GetHeader() with GetFooter()
 
 Output:
 ```
