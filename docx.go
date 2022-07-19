@@ -9,8 +9,19 @@ import (
 
 //Body : Elements found within the body section of a word docx
 type Body struct {
-	Paragraphs []string `xml:"p>r>t"`
+	Paragraphs []Paragraph `xml:"p"`
 	Tables     []Table  `xml:"tbl"`
+}
+
+type Paragraph struct {
+	TextGroup []TextGroup `xml:"r"`
+}
+
+type TextGroup struct {
+	Text string `xml:"t"`
+	Italics *struct{} `xml:"rPr>i,omitempty"`
+	Bold *struct{} `xml:"rPr>b,omitempty"`
+	LineBreak *struct{} `xml:"br,omitempty"`
 }
 
 //Table : Holds all the things a tbl element can
